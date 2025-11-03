@@ -1,0 +1,83 @@
+<h1>BrewLogic Clients</h1>
+
+{{!-- READ table --}}
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>First Name</th>
+      <th>Last Name</th>
+      <th>Email</th>
+      <th>Phone Number</th>
+      <th>Address</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {{#each clients}}
+    <tr>
+      <td>{{this.clientID}}</td>
+      <td>{{this.firstName}}</td>
+      <td>{{this.lastName}}</td>
+      <td>{{this.email}}</td>
+      <td>{{this.phoneNumber}}</td>
+      <td>{{this.address}}</td>
+
+      {{!-- DELETE form --}}
+      <form id="delete_client_form">
+        <input type="hidden" name="delete_client_id" value="{{this.clientID}}" />
+        <input type="hidden" name="delete_client_name" value="{{this.firstName}} {{this.lastName}}" />
+        <td>
+          <button type="submit">Delete</button>
+        </td>
+      </form>
+    </tr>
+    {{/each}}
+  </tbody>
+</table>
+
+{{!-- CREATE form --}}
+<h2>Create a Client</h2>
+<form class="cuForm" id="create_client_form">
+  <label for="create_client_firstName">First Name:</label>
+  <input type="text" name="create_client_firstName" id="create_client_firstName" required />
+
+  <label for="create_client_lastName">Last Name:</label>
+  <input type="text" name="create_client_lastName" id="create_client_lastName" required />
+
+  <label for="create_client_email">Email:</label>
+  <input type="email" name="create_client_email" id="create_client_email" />
+
+  <label for="create_client_phoneNumber">Phone Number:</label>
+  <input type="text" name="create_client_phoneNumber" id="create_client_phoneNumber" />
+
+  <label for="create_client_address">Address:</label>
+  <input type="text" name="create_client_address" id="create_client_address" />
+
+  <input type="submit" />
+</form>
+
+{{!-- UPDATE form --}}
+<h2>Update a Client</h2>
+<form class="cuForm" id="update_client_form">
+  <label for="update_client_id">Client to Update:</label>
+  <select name="update_client_id" id="update_client_id" required>
+    <option value="" disabled selected>Select a Client</option>
+    {{#each clients}}
+    <option value="{{this.clientID}}">
+      {{this.clientID}} - {{this.firstName}} {{this.lastName}}
+    </option>
+    {{/each}}
+  </select>
+
+  <label for="update_client_email">New Email:</label>
+  <input type="email" name="update_client_email" id="update_client_email" />
+
+  <label for="update_client_phoneNumber">New Phone Number:</label>
+  <input type="text" name="update_client_phoneNumber" id="update_client_phoneNumber" />
+
+  <label for="update_client_address">New Address:</label>
+  <input type="text" name="update_client_address" id="update_client_address" />
+
+  <input type="submit" />
+</form>
