@@ -1,0 +1,50 @@
+<h1>Order Items</h1>
+
+{{!-- READ table --}}
+<table>
+  <thead>
+    <tr>
+      {{#each orderitems.[0]}}<th>{{@key}}</th>{{/each}}
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {{#each orderitems}}
+    <tr>
+      {{#each this}}<td>{{this}}</td>{{/each}}
+      <td>
+        <form id="delete_orderitem_form">
+          <input type="hidden" name="delete_orderitem_id" value="{{this.orderItemID}}" />
+          <button type="submit">Delete</button>
+        </form>
+      </td>
+    </tr>
+    {{/each}}
+  </tbody>
+</table>
+
+{{!-- UPDATE form --}}
+<h2>Update an Order Item</h2>
+<form class="cuForm" id="update_orderitem_form">
+  <label for="update_orderitem_id">Order Item to Update:</label>
+  <select name="update_orderitem_id" id="update_orderitem_id" required>
+    <option value="" disabled selected>Select an Order Item</option>
+    {{#each orderitems}}
+    <option value="{{this.orderItemID}}">
+      {{this.orderItemID}} - Order {{this.orderID}}, Product {{this.productID}}
+    </option>
+    {{/each}}
+  </select>
+
+  <label for="update_orderitem_orderQty">New Quantity:</label>
+  <input type="number" name="update_orderitem_orderQty" id="update_orderitem_orderQty" required />
+
+  <label for="update_orderitem_unitPrice">New Unit Price:</label>
+  <input type="number" step="0.01" name="update_orderitem_unitPrice" id="update_orderitem_unitPrice" required />
+
+  <label for="update_orderitem_lineTotal">New Line Total:</label>
+  <input type="number" step="0.01" name="update_orderitem_lineTotal" id="update_orderitem_lineTotal" required />
+
+  <input type="submit" />
+</form>
+

@@ -1,0 +1,39 @@
+<h1>Categories</h1>
+
+{{!-- READ table --}}
+<table>
+  <thead>
+    <tr>
+      {{#each categories.[0]}}
+      <th>{{@key}}</th>
+      {{/each}}
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {{#each categories}}
+    <tr>
+      {{#each this}}
+      <td>{{this}}</td>
+      {{/each}}
+
+      {{!-- DELETE form --}}
+      <form id="delete_category_form">
+        <input type="hidden" name="delete_category_id" value="{{this.categoryID}}" />
+        <input type="hidden" name="delete_category_name" value="{{this.categoryName}}" />
+        <td>
+          <button type="submit">Delete</button>
+        </td>
+      </form>
+    </tr>
+    {{/each}}
+  </tbody>
+</table>
+
+{{!-- CREATE form --}}
+<h2>Create a Category</h2>
+<form class="cuForm" id="create_category_form">
+  <label for="create_category_name">Category Name:</label>
+  <input type="text" name="create_category_name" id="create_category_name" required />
+  <input type="submit" />
+</form>

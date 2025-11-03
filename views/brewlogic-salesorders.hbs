@@ -1,0 +1,70 @@
+<h1>Sales Orders</h1>
+
+{{!-- READ table --}}
+<table>
+  <thead>
+    <tr>
+      {{#each salesorders.[0]}}
+      <th>{{@key}}</th>
+      {{/each}}
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {{#each salesorders}}
+    <tr>
+      {{#each this}}
+      <td>{{this}}</td>
+      {{/each}}
+
+      {{!-- DELETE form --}}
+      <form id="delete_salesorder_form">
+        <input type="hidden" name="delete_salesorder_id" value="{{this.orderID}}" />
+        <td>
+          <button type="submit">Delete</button>
+        </td>
+      </form>
+    </tr>
+    {{/each}}
+  </tbody>
+</table>
+
+{{!-- CREATE form --}}
+<h2>Create a Sales Order</h2>
+<form class="cuForm" id="create_salesorder_form">
+  <label for="create_salesorder_clientID">Client:</label>
+  <select name="create_salesorder_clientID" id="create_salesorder_clientID" required>
+    <option value="" disabled selected>Select a Client</option>
+    {{#each clients}}
+    <option value="{{this.clientID}}">{{this.firstName}} {{this.lastName}}</option>
+    {{/each}}
+  </select>
+
+  <label for="create_salesorder_orderDate">Order Date:</label>
+  <input type="date" name="create_salesorder_orderDate" id="create_salesorder_orderDate" required />
+  <input type="submit" />
+</form>
+
+{{!-- UPDATE form --}}
+<h2>Update a Sales Order</h2>
+<form class="cuForm" id="update_salesorder_form">
+  <label for="update_salesorder_id">Sales Order to Update:</label>
+  <select name="update_salesorder_id" id="update_salesorder_id" required>
+    <option value="" disabled selected>Select an Order</option>
+    {{#each salesorders}}
+    <option value="{{this.orderID}}">{{this.orderID}}</option>
+    {{/each}}
+  </select>
+
+  <label for="update_salesorder_clientID">New Client:</label>
+  <select name="update_salesorder_clientID" id="update_salesorder_clientID">
+    <option value="" disabled selected>Select a Client</option>
+    {{#each clients}}
+    <option value="{{this.clientID}}">{{this.firstName}} {{this.lastName}}</option>
+    {{/each}}
+  </select>
+
+  <label for="update_salesorder_orderDate">New Order Date:</label>
+  <input type="date" name="update_salesorder_orderDate" id="update_salesorder_orderDate" />
+  <input type="submit" />
+</form>

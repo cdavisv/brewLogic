@@ -1,27 +1,21 @@
-<h1>BrewLogic Clients</h1>
+<h1>Clients</h1>
 
 {{!-- READ table --}}
 <table>
   <thead>
     <tr>
-      <th>ID</th>
-      <th>First Name</th>
-      <th>Last Name</th>
-      <th>Email</th>
-      <th>Phone Number</th>
-      <th>Address</th>
+      {{#each clients.[0]}}
+      <th>{{@key}}</th>
+      {{/each}}
       <th></th>
     </tr>
   </thead>
   <tbody>
     {{#each clients}}
     <tr>
-      <td>{{this.clientID}}</td>
-      <td>{{this.firstName}}</td>
-      <td>{{this.lastName}}</td>
-      <td>{{this.email}}</td>
-      <td>{{this.phoneNumber}}</td>
-      <td>{{this.address}}</td>
+      {{#each this}}
+      <td>{{this}}</td>
+      {{/each}}
 
       {{!-- DELETE form --}}
       <form id="delete_client_form">
@@ -54,6 +48,14 @@
   <label for="create_client_address">Address:</label>
   <input type="text" name="create_client_address" id="create_client_address" />
 
+  <label for="create_client_categoryID">Category:</label>
+  <select name="create_client_categoryID" id="create_client_categoryID" required>
+    <option value="" disabled selected>Select Category</option>
+    {{#each categories}}
+    <option value="{{this.categoryID}}">{{this.categoryName}}</option>
+    {{/each}}
+  </select>
+
   <input type="submit" />
 </form>
 
@@ -79,5 +81,14 @@
   <label for="update_client_address">New Address:</label>
   <input type="text" name="update_client_address" id="update_client_address" />
 
+  <label for="update_client_categoryID">New Category:</label>
+  <select name="update_client_categoryID" id="update_client_categoryID">
+    <option value="" disabled selected>Select Category</option>
+    {{#each categories}}
+    <option value="{{this.categoryID}}">{{this.categoryName}}</option>
+    {{/each}}
+  </select>
+
   <input type="submit" />
 </form>
+
