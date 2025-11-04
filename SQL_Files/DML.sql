@@ -252,6 +252,3 @@ WHERE orderItemID = :orderItemID_from_form;
 DELETE FROM OrderItems
 WHERE orderItemID = :orderItemID_to_delete;
 -- After this, you should re-calculate and UPDATE the SalesOrders.totalAmount
-
-
-

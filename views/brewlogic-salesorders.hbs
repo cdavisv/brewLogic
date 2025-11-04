@@ -42,6 +42,19 @@
 
   <label for="create_salesorder_orderDate">Order Date:</label>
   <input type="date" name="create_salesorder_orderDate" id="create_salesorder_orderDate" required />
+
+  <label for="create_salesorder_totalAmount">Total Amount:</label>
+  <input type="number" step="0.01" name="create_salesorder_totalAmount" id="create_salesorder_totalAmount" required />
+
+  <label for="create_salesorder_orderStatus">Order Status:</label>
+  <select name="create_salesorder_orderStatus" id="create_salesorder_orderStatus" required>
+    <option value="" disabled selected>Select Status</option>
+    <option value="Pending">Pending</option>
+    <option value="Shipped">Shipped</option>
+    <option value="Completed">Completed</option>
+    <option value="Cancelled">Cancelled</option>
+  </select>
+
   <input type="submit" />
 </form>
 
@@ -66,5 +79,15 @@
 
   <label for="update_salesorder_orderDate">New Order Date:</label>
   <input type="date" name="update_salesorder_orderDate" id="update_salesorder_orderDate" />
+
+  <label for="update_salesorder_orderStatus">New Status:</label>
+  <select name="update_salesorder_orderStatus" id="update_salesorder_orderStatus">
+    <option value="" disabled selected>Select Status</option>
+    <option value="Pending">Pending</option>
+    <option value="Shipped">Shipped</option>
+    <option value="Completed">Completed</option>
+    <option value="Cancelled">Cancelled</option>
+  </select>
+
   <input type="submit" />
 </form>
