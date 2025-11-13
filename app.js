@@ -22,7 +22,21 @@ const db = require('./database/db-connector');
 
 // Handlebars
 const { engine } = require('express-handlebars');
-app.engine('.hbs', engine({ extname: '.hbs' }));
+
+app.engine('.hbs', engine({
+    extname: '.hbs',
+    helpers: {
+        formatDate: function (d) {
+            if (!d) return "";
+            try {
+                return new Date(d).toISOString().split("T")[0];
+            } catch (e) {
+                return d;
+            }
+        }
+    }
+}));
+
 app.set('view engine', '.hbs');
 
 // ########################################

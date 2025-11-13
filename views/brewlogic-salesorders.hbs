@@ -13,17 +13,19 @@
   <tbody>
     {{#each salesorders}}
     <tr>
-      {{#each this}}
-      <td>{{this}}</td>
-      {{/each}}
+      <td>{{orderID}}</td>
+      <td>{{formatDate orderDate}}</td>
+      <td>{{clientID}}</td>
+      <td>{{totalAmount}}</td>
+      <td>{{orderStatus}}</td>
 
-      {{!-- DELETE form --}}
-      <form id="delete_salesorder_form">
-        <input type="hidden" name="delete_salesorder_id" value="{{this.orderID}}" />
-        <td>
+      <td>
+        {{!-- DELETE form --}}
+        <form id="delete_salesorder_form">
+          <input type="hidden" name="delete_salesorder_id" value="{{orderID}}" />
           <button type="submit">Delete</button>
-        </td>
-      </form>
+        </form>
+      </td>
     </tr>
     {{/each}}
   </tbody>
