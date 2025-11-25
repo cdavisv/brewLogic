@@ -102,7 +102,181 @@ BEGIN
 
     SET FOREIGN_KEY_CHECKS=1;
 END //
+-- Insert procedures for all entities
+DROP PROCEDURE IF EXISTS sp_insert_client;
+CREATE PROCEDURE sp_insert_client(
+    IN p_firstName VARCHAR(50),
+    IN p_lastName VARCHAR(50),
+    IN p_email VARCHAR(100),
+    IN p_phoneNumber VARCHAR(15),
+    IN p_address VARCHAR(255),
+    IN p_categoryID INT
+)
+BEGIN
+    INSERT INTO Clients (firstName, lastName, email, phoneNumber, address, categoryID)
+    VALUES (p_firstName, p_lastName, p_email, p_phoneNumber, p_address, p_categoryID);
+END //
 
+DROP PROCEDURE IF EXISTS sp_insert_category;
+CREATE PROCEDURE sp_insert_category(
+    IN p_categoryName VARCHAR(50)
+)
+BEGIN
+    INSERT INTO Categories (categoryName)
+    VALUES (p_categoryName);
+END //
+
+DROP PROCEDURE IF EXISTS sp_insert_product;
+CREATE PROCEDURE sp_insert_product(
+    IN p_productName VARCHAR(100),
+    IN p_beerType VARCHAR(50),
+    IN p_beerPrice DECIMAL(9,2),
+    IN p_productInStock INT,
+    IN p_currentlyAvailable BOOLEAN
+)
+BEGIN
+    INSERT INTO Products (productName, beerType, beerPrice, productInStock, currentlyAvailable)
+    VALUES (p_productName, p_beerType, p_beerPrice, p_productInStock, p_currentlyAvailable);
+END //
+
+DROP PROCEDURE IF EXISTS sp_insert_salesorder;
+CREATE PROCEDURE sp_insert_salesorder(
+    IN p_orderDate DATE,
+    IN p_clientID INT,
+    IN p_totalAmount DECIMAL(18,2),
+    IN p_orderStatus VARCHAR(50)
+)
+BEGIN
+    INSERT INTO SalesOrders (orderDate, clientID, totalAmount, orderStatus)
+    VALUES (p_orderDate, p_clientID, p_totalAmount, p_orderStatus);
+END //
+
+DROP PROCEDURE IF EXISTS sp_insert_orderitem;
+CREATE PROCEDURE sp_insert_orderitem(
+    IN p_orderID INT,
+    IN p_productID INT,
+    IN p_orderQty INT,
+    IN p_unitPrice DECIMAL(9,2)
+)
+BEGIN
+    -- Prevent duplicate product in the same order
+    IF EXISTS (
+        SELECT 1
+        FROM OrderItems
+        WHERE orderID = p_orderID
+          AND productID = p_productID
+    ) THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Duplicate product for this order. Use Update instead.';
+    ELSE
+        -- Insert new order item
+        INSERT INTO OrderItems (orderID, productID, orderQty, unitPrice)
+        VALUES (p_orderID, p_productID, p_orderQty, p_unitPrice);
+
+        -- Recalculate SalesOrder total
+        UPDATE SalesOrders
+        SET totalAmount = (
+            SELECT SUM(orderQty * unitPrice)
+            FROM OrderItems
+            WHERE orderID = p_orderID
+        )
+        WHERE orderID = p_orderID;
+    END IF;
+END //
+--Update procedures for all entities
+DROP PROCEDURE IF EXISTS sp_update_client;
+CREATE PROCEDURE sp_update_client(
+    IN p_clientID INT,
+    IN p_firstName VARCHAR(50),
+    IN p_lastName VARCHAR(50),
+    IN p_email VARCHAR(100),
+    IN p_phoneNumber VARCHAR(15),
+    IN p_address VARCHAR(255),
+    IN p_categoryID INT
+)
+BEGIN
+    UPDATE Clients
+    SET firstName = p_firstName,
+        lastName = p_lastName,
+        email = p_email,
+        phoneNumber = p_phoneNumber,
+        address = p_address,
+        categoryID = p_categoryID
+    WHERE clientID = p_clientID;
+END //
+
+DROP PROCEDURE IF EXISTS sp_update_category;
+CREATE PROCEDURE sp_update_category(
+    IN p_categoryID INT,
+    IN p_categoryName VARCHAR(50)
+)
+BEGIN
+    UPDATE Categories
+    SET categoryName = p_categoryName
+    WHERE categoryID = p_categoryID;
+END //
+
+DROP PROCEDURE IF EXISTS sp_update_product;
+CREATE PROCEDURE sp_update_product(
+    IN p_productID INT,
+    IN p_productName VARCHAR(100),
+    IN p_beerType VARCHAR(50),
+    IN p_beerPrice DECIMAL(9,2),
+    IN p_productInStock INT,
+    IN p_currentlyAvailable BOOLEAN
+)
+BEGIN
+    UPDATE Products
+    SET productName = p_productName,
+        beerType = p_beerType,
+        beerPrice = p_beerPrice,
+        productInStock = p_productInStock,
+        currentlyAvailable = p_currentlyAvailable
+    WHERE productID = p_productID;
+END //
+
+DROP PROCEDURE IF EXISTS sp_update_salesorder;
+CREATE PROCEDURE sp_update_salesorder(
+    IN p_orderID INT,
+    IN p_orderDate DATE,
+    IN p_clientID INT,
+    IN p_totalAmount DECIMAL(18,2),
+    IN p_orderStatus VARCHAR(50)
+)
+BEGIN
+    UPDATE SalesOrders
+    SET orderDate = p_orderDate,
+        clientID = p_clientID,
+        totalAmount = p_totalAmount,
+        orderStatus = p_orderStatus
+    WHERE orderID = p_orderID;
+END //
+
+DROP PROCEDURE IF EXISTS sp_update_orderitem;
+CREATE PROCEDURE sp_update_orderitem(
+    IN p_orderItemID INT,
+    IN p_orderQty INT,
+    IN p_unitPrice DECIMAL(9,2)
+)
+BEGIN
+    UPDATE OrderItems
+    SET orderQty = p_orderQty,
+        unitPrice = p_unitPrice
+    WHERE orderItemID = p_orderItemID;
+
+    -- Recalculate SalesOrder total
+    UPDATE SalesOrders
+    SET totalAmount = (
+        SELECT SUM(orderQty * unitPrice)
+        FROM OrderItems
+        WHERE orderID = (
+            SELECT orderID FROM OrderItems WHERE orderItemID = p_orderItemID
+        )
+    )
+    WHERE orderID = (
+        SELECT orderID FROM OrderItems WHERE orderItemID = p_orderItemID
+    );
+END //
 -- DELETE procedures for all entities
 DROP PROCEDURE IF EXISTS sp_delete_client;
 CREATE PROCEDURE sp_delete_client(IN p_clientID INT)
