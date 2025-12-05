@@ -183,44 +183,117 @@ app.post('/orderitems/add', async (req, res) => {
     }
 });
 
+// Utility function to build SET clause dynamically
+function buildUpdate(fields) {
+    const keys = Object.keys(fields);
+    if (keys.length === 0) return null; 
+    const setClause = keys.map(k => `${k} = ?`).join(", ");
+    const values = Object.values(fields);
+    return { setClause, values };
+}
 
 // UPDATE Routes
+
+// CLIENTS UPDATE
 app.post('/clients/update', async (req, res) => {
-    try {
-        const { clientID, firstName, lastName, email, phoneNumber, address, categoryID } = req.body;
-        await db.query('CALL sp_update_client(?,?,?,?,?,?,?)',
-            [clientID, firstName, lastName, email, phoneNumber, address, categoryID]);
-        res.redirect('/clients');
-    } catch (error) {
-        console.error("Error updating client:", error);
-        res.status(500).send("Update failed.");
-    }
+    const { clientID, firstName, lastName, email, phoneNumber, address, categoryID } = req.body;
+
+    const updates = {};
+    if (firstName?.trim()) updates.firstName = firstName;
+    if (lastName?.trim()) updates.lastName = lastName;
+    if (email?.trim()) updates.email = email;
+    if (phoneNumber?.trim()) updates.phoneNumber = phoneNumber;
+    if (address?.trim()) updates.address = address;
+    if (categoryID?.trim()) updates.categoryID = categoryID;
+
+    const sql = buildUpdate(updates);
+    if (!sql) return res.redirect('/clients');
+
+    await db.query(
+        `UPDATE Clients SET ${sql.setClause} WHERE clientID = ?`,
+        [...sql.values, clientID]
+    );
+
+    res.redirect('/clients');
 });
 
+// PRODUCTS UPDATE
 app.post('/products/update', async (req, res) => {
     const { productID, productName, beerType, beerPrice, productInStock, currentlyAvailable } = req.body;
-    await db.query('CALL sp_update_product(?,?,?,?,?,?)',
-        [productID, productName, beerType, beerPrice, productInStock, currentlyAvailable]);
+
+    const updates = {};
+    if (productName?.trim()) updates.productName = productName;
+    if (beerType?.trim()) updates.beerType = beerType;
+    if (beerPrice) updates.beerPrice = beerPrice;
+    if (productInStock) updates.productInStock = productInStock;
+    if (currentlyAvailable) updates.currentlyAvailable = currentlyAvailable;
+
+    const sql = buildUpdate(updates);
+    if (!sql) return res.redirect('/products');
+
+    await db.query(
+        `UPDATE Products SET ${sql.setClause} WHERE productID = ?`,
+        [...sql.values, productID]
+    );
+
     res.redirect('/products');
 });
 
+// CATEGORIES UPDATE
 app.post('/categories/update', async (req, res) => {
     const { categoryID, categoryName } = req.body;
-    await db.query('CALL sp_update_category(?,?)', [categoryID, categoryName]);
+
+    const updates = {};
+    if (categoryName?.trim()) updates.categoryName = categoryName;
+
+    const sql = buildUpdate(updates);
+    if (!sql) return res.redirect('/categories');
+
+    await db.query(
+        `UPDATE Categories SET ${sql.setClause} WHERE categoryID = ?`,
+        [...sql.values, categoryID]
+    );
+
     res.redirect('/categories');
 });
 
+// SALES ORDERS UPDATE
 app.post('/salesorders/update', async (req, res) => {
     const { orderID, orderDate, clientID, totalAmount, orderStatus } = req.body;
-    await db.query('CALL sp_update_salesorder(?,?,?,?,?)',
-        [orderID, orderDate, clientID, totalAmount, orderStatus]);
+
+    const updates = {};
+    if (orderDate?.trim()) updates.orderDate = orderDate;
+    if (clientID?.trim()) updates.clientID = clientID;
+    if (totalAmount) updates.totalAmount = totalAmount;
+    if (orderStatus?.trim()) updates.orderStatus = orderStatus;
+
+    const sql = buildUpdate(updates);
+    if (!sql) return res.redirect('/salesorders');
+
+    await db.query(
+        `UPDATE SalesOrders SET ${sql.setClause} WHERE orderID = ?`,
+        [...sql.values, orderID]
+    );
+
     res.redirect('/salesorders');
 });
 
+// ORDER ITEMS UPDATE
 app.post('/orderitems/update', async (req, res) => {
     const { orderItemID, orderQty, unitPrice } = req.body;
-    await db.query('CALL sp_update_orderitem(?,?,?)',
-        [orderItemID, orderQty, unitPrice]);
+
+    const updates = {};
+    if (orderQty) updates.orderQty = orderQty;
+    if (unitPrice) updates.unitPrice = unitPrice;
+
+    const sql = buildUpdate(updates);
+    if (!sql) return res.redirect('/orderitems');
+
+    await db.query(
+        `UPDATE OrderItems SET ${sql.setClause} WHERE orderItemID = ?`,
+        [...sql.values, orderItemID]
+    );
+
     res.redirect('/orderitems');
 });
 
