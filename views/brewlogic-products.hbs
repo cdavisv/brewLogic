@@ -13,9 +13,18 @@
   <tbody>
     {{#each products}}
     <tr>
-      {{#each this}}
-      <td>{{this}}</td>
-      {{/each}}
+      <td>{{productID}}</td>
+      <td>{{productName}}</td>
+      <td>{{beerType}}</td>
+      <td>{{beerPrice}}</td>
+      <td>{{productInStock}}</td>
+      <td>
+        {{#if currentlyAvailable}}
+          Yes
+        {{else}}
+          No
+        {{/if}}
+      </td>
 
       {{!-- DELETE form --}}
       <td>
