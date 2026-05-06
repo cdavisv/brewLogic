@@ -78,6 +78,19 @@ function hasValue(value) {
     return value !== undefined && value !== null && value !== '';
 }
 
+const RESET_TOKEN = process.env.BREWLOGIC_RESET_TOKEN || process.env.RESET_TOKEN;
+const ALLOW_RESET_WITHOUT_TOKEN = process.env.BREWLOGIC_ALLOW_RESET_WITHOUT_TOKEN === 'true';
+const APP_ENV = process.env.NODE_ENV || 'development';
+
+function isResetAuthorized(req) {
+    if (APP_ENV !== 'production' && ALLOW_RESET_WITHOUT_TOKEN) {
+        return true;
+    }
+
+    const token = req.body?.resetToken || req.headers['x-reset-token'];
+    return Boolean(RESET_TOKEN) && Boolean(token) && token === RESET_TOKEN;
+}
+
 function addStringUpdate(updates, key, value) {
     if (typeof value === 'string' && value.trim() !== '') {
         updates[key] = value.trim();
@@ -250,6 +263,10 @@ app.get('/orderitems', async function (req, res) {
 
 // RESET Database Route
 app.post('/reset', async function (req, res) {
+    if (!isResetAuthorized(req)) {
+        return res.status(403).send('Reset is disabled. Set BREWLOGIC_RESET_TOKEN (header x-reset-token or form field resetToken) or enable BREWLOGIC_ALLOW_RESET_WITHOUT_TOKEN in non-production.');
+    }
+
     try {
         const query = 'CALL sp_brewlogic_reset();';
         await db.query(query);
@@ -484,7 +501,17 @@ app.post('/clients/delete', async (req, res) => {
 app.post('/products/delete', async (req, res) => {
     try {
         const productID = req.body.delete_product_id;
+        const [orders] = await db.query(
+            'SELECT DISTINCT orderID FROM OrderItems WHERE productID = ?',
+            [productID]
+        );
+
         await db.query('CALL sp_delete_product(?);', [productID]);
+
+        for (const row of orders) {
+            await recalculateOrderTotal(row.orderID);
+        }
+
         res.redirect('/products');
     } catch (error) {
         console.error("Error deleting product:", error);

@@ -95,10 +95,10 @@ BEGIN
       ('2025-10-03', 2, 324.50, 'Shipped'),
       ('2025-10-05', 3, 11.98, 'Pending');
 
-    INSERT INTO OrderItems (orderID, productID, orderQty, unitPrice, lineTotal) VALUES
-      (1, 1, 3, 5.99, 17.97),
-      (2, 2, 50, 6.49, 324.50),
-      (3, 3, 2, 5.99, 11.98);
+    INSERT INTO OrderItems (orderID, productID, orderQty, unitPrice) VALUES
+      (1, 1, 3, 5.99),
+      (2, 2, 50, 6.49),
+      (3, 3, 2, 5.99);
 
     SET FOREIGN_KEY_CHECKS=1;
 END //
