@@ -287,7 +287,29 @@ END //
 DROP PROCEDURE IF EXISTS sp_delete_product;
 CREATE PROCEDURE sp_delete_product(IN p_productID INT)
 BEGIN
+    CREATE TEMPORARY TABLE IF NOT EXISTS impacted_orders_product (
+        orderID INT PRIMARY KEY
+    );
+
+    TRUNCATE TABLE impacted_orders_product;
+    INSERT INTO impacted_orders_product (orderID)
+    SELECT DISTINCT orderID
+    FROM OrderItems
+    WHERE productID = p_productID;
+
     DELETE FROM Products WHERE productID = p_productID;
+
+    UPDATE SalesOrders
+    JOIN impacted_orders_product AS io
+        ON io.orderID = SalesOrders.orderID
+    SET totalAmount = COALESCE(
+        (SELECT SUM(orderQty * unitPrice)
+         FROM OrderItems
+         WHERE orderID = SalesOrders.orderID),
+        0.00
+    );
+
+    DROP TEMPORARY TABLE IF EXISTS impacted_orders_product;
 END //
 
 DROP PROCEDURE IF EXISTS sp_delete_category;
@@ -305,7 +327,26 @@ END //
 DROP PROCEDURE IF EXISTS sp_delete_orderitem;
 CREATE PROCEDURE sp_delete_orderitem(IN p_orderItemID INT)
 BEGIN
+    DECLARE v_orderID INT;
+
+    SELECT orderID
+    INTO v_orderID
+    FROM OrderItems
+    WHERE orderItemID = p_orderItemID
+    LIMIT 1;
+
     DELETE FROM OrderItems WHERE orderItemID = p_orderItemID;
+
+    IF v_orderID IS NOT NULL THEN
+        UPDATE SalesOrders
+        SET totalAmount = COALESCE(
+            (SELECT SUM(orderQty * unitPrice)
+             FROM OrderItems
+             WHERE orderID = v_orderID),
+            0.00
+        )
+        WHERE orderID = v_orderID;
+    END IF;
 END //
 
 DELIMITER ;
