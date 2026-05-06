@@ -50,6 +50,8 @@ app.set('view engine', '.hbs');
 
 app.use((req, res, next) => {
     res.locals.currentPath = req.path;
+    res.locals.resetEnabled = RESET_ENABLED;
+    res.locals.resetTokenConfigured = RESET_TOKEN_CONFIGURED;
     next();
 });
 
@@ -81,14 +83,17 @@ function hasValue(value) {
 const RESET_TOKEN = process.env.BREWLOGIC_RESET_TOKEN || process.env.RESET_TOKEN;
 const ALLOW_RESET_WITHOUT_TOKEN = process.env.BREWLOGIC_ALLOW_RESET_WITHOUT_TOKEN === 'true';
 const APP_ENV = process.env.NODE_ENV || 'development';
+const RESET_TOKEN_CONFIGURED = Boolean(RESET_TOKEN);
+const RESET_WITHOUT_TOKEN_ALLOWED = APP_ENV !== 'production' && ALLOW_RESET_WITHOUT_TOKEN;
+const RESET_ENABLED = RESET_WITHOUT_TOKEN_ALLOWED || RESET_TOKEN_CONFIGURED;
 
 function isResetAuthorized(req) {
-    if (APP_ENV !== 'production' && ALLOW_RESET_WITHOUT_TOKEN) {
+    if (RESET_WITHOUT_TOKEN_ALLOWED) {
         return true;
     }
 
     const token = req.body?.resetToken || req.headers['x-reset-token'];
-    return Boolean(RESET_TOKEN) && Boolean(token) && token === RESET_TOKEN;
+    return RESET_TOKEN_CONFIGURED && Boolean(token) && token === RESET_TOKEN;
 }
 
 function addStringUpdate(updates, key, value) {

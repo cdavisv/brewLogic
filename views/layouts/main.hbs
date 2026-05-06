@@ -26,7 +26,22 @@
         </nav>
 
         <form class="reset-form" method="POST" action="/reset" onsubmit="return confirm('Reset demo data? This will replace the current database contents.');">
-            <button class="reset-link" type="submit">Reset demo data</button>
+            {{#if resetEnabled}}
+                {{#if resetTokenConfigured}}
+                    <input
+                        class="reset-token-input"
+                        type="password"
+                        name="resetToken"
+                        autocomplete="off"
+                        placeholder="Reset token"
+                        aria-label="Reset token"
+                    >
+                {{/if}}
+                <button class="reset-link" type="submit">Reset demo data</button>
+            {{else}}
+                <button class="reset-link" type="submit" disabled>Reset unavailable</button>
+                <span class="reset-note">Set BREWLOGIC_RESET_TOKEN in production to enable.</span>
+            {{/if}}
         </form>
     </header>
 
