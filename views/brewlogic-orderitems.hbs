@@ -1,95 +1,157 @@
-<h1>Order Items</h1>
+<section class="page-heading">
+  <p class="eyebrow">Cart</p>
+  <h1>Order Items</h1>
+  <p>Beer lines attached to existing sales orders with quantity, price, and generated totals.</p>
+</section>
 
-{{!-- READ table --}}
-<table>
-  <thead>
-    <tr>
-      {{#each orderitems.[0]}}<th>{{@key}}</th>{{/each}}
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    {{#each orderitems}}
-    <tr>
-      {{#each this}}<td>{{this}}</td>{{/each}}
+<section class="table-panel" aria-labelledby="itemsTableTitle">
+  <div class="section-header">
+    <div>
+      <p class="eyebrow">Line items</p>
+      <h2 id="itemsTableTitle">Order Item List</h2>
+    </div>
+  </div>
 
-      {{!-- DELETE form --}}
-      <td>
-        <form method="POST" action="/orderitems/delete">
-          <input type="hidden" name="delete_orderitem_id" value="{{orderItemID}}" />
-          <button type="submit">Delete</button>
-        </form>
-      </td>
-    </tr>
-    {{/each}}
-  </tbody>
-</table>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Item</th>
+          <th scope="col">Order</th>
+          <th scope="col">Beer</th>
+          <th scope="col">Style</th>
+          <th scope="col">Qty</th>
+          <th scope="col">Unit Price</th>
+          <th scope="col">Line Total</th>
+          <th scope="col">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#if orderitems.length}}
+          {{#each orderitems}}
+          <tr>
+            <td class="numeric">#{{orderItemID}}</td>
+            <td class="numeric">#{{orderID}}</td>
+            <td><strong>{{productName}}</strong></td>
+            <td>{{beerType}}</td>
+            <td class="numeric">{{orderQty}}</td>
+            <td class="numeric">{{formatMoney unitPrice}}</td>
+            <td class="numeric">{{formatMoney lineTotal}}</td>
+            <td>
+              <form method="POST" action="/orderitems/delete" onsubmit="return confirm('Delete this line item?');">
+                <input type="hidden" name="delete_orderitem_id" value="{{orderItemID}}">
+                <button class="button button-danger button-compact" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {{/each}}
+        {{else}}
+          <tr>
+            <td colspan="8" class="empty-state">No order items have been added yet.</td>
+          </tr>
+        {{/if}}
+      </tbody>
+    </table>
+  </div>
+</section>
 
-{{!-- CREATE form --}}
-<h2>Add a Product to an Existing Order</h2>
-<form class="cuForm" id="create_orderitem_form" method="POST" action="/orderitems/add">
-  <p><em>Note: You cannot add the same product twice to the same order. Use Update instead.</em></p>
+<section class="action-grid" aria-label="Order item actions">
+  <form class="form-panel" id="create_orderitem_form" method="POST" action="/orderitems/add">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow">Add beer line</p>
+        <h2>Add Product to Order</h2>
+      </div>
+    </div>
 
-  <label for="orderID">Order:</label>
-  <select name="orderID" id="orderID" required>
-    <option value="" disabled selected>Select Order</option>
-    {{#each salesorders}}
-     <option value="{{this.orderID}}">{{this.orderID}}</option>
-    {{/each}}
-  </select>
+    <div class="form-grid">
+      <label class="form-wide">
+        <span>Order</span>
+        <select name="orderID" id="orderID" required>
+          <option value="" disabled selected>Select order</option>
+          {{#each salesorders}}
+          <option value="{{this.orderID}}">#{{this.orderID}} - {{formatDate this.orderDate}} - {{this.clientName}}</option>
+          {{/each}}
+        </select>
+      </label>
 
-  <label for="productID">Product:</label>
-  <select name="productID" id="productID" required>
-    <option value="" disabled selected>Select Product</option>
-    {{#each products}}
-    <option value="{{this.productID}}">
-      {{this.productID}} - {{this.productName}}
-    </option>
-    {{/each}}
-  </select>
+      <label class="form-wide">
+        <span>Product</span>
+        <select name="productID" id="productID" required>
+          <option value="" disabled selected>Select product</option>
+          {{#each products}}
+          <option value="{{this.productID}}" data-price="{{this.beerPrice}}">
+            #{{this.productID}} - {{this.productName}} ({{this.beerType}})
+          </option>
+          {{/each}}
+        </select>
+      </label>
 
-  <label for="orderQty">Quantity:</label>
-  <input type="number" name="orderQty" id="orderQty" required />
+      <label>
+        <span>Quantity</span>
+        <input type="number" min="1" name="orderQty" id="orderQty" required>
+      </label>
 
-  <label for="unitPrice">Unit Price:</label>
-  <input type="number" step="0.01" name="unitPrice" id="unitPrice" required />
+      <label>
+        <span>Unit Price</span>
+        <input type="number" step="0.01" min="0" name="unitPrice" id="unitPrice" required>
+      </label>
+    </div>
 
-  <button type="submit">Add Item</button>
-</form>
+    <div class="form-actions">
+      <button class="button button-primary" type="submit">Add Item</button>
+    </div>
+  </form>
 
-{{!-- UPDATE form --}}
-<h2>Update an Order Item</h2>
-<form class="cuForm" id="update_orderitem_form" method="POST" action="/orderitems/update">
-  <label for="updateOrderItemID">Order Item to Update:</label>
-  <select name="orderItemID" id="updateOrderItemID" required>
-    <option value="" disabled selected>Select an Item</option>
-    {{#each orderitems}}
-    <option value="{{this.orderItemID}}"
-            data-qty="{{this.orderQty}}"
-            data-price="{{this.unitPrice}}"
-            data-product="{{this.productID}}"
-            data-order="{{this.orderID}}">
-      {{this.orderItemID}} - {{this.productID}} (Order {{this.orderID}})
-    </option>
-    {{/each}}
-  </select>
+  <form class="form-panel" id="update_orderitem_form" method="POST" action="/orderitems/update">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow">Revise beer line</p>
+        <h2>Update Order Item</h2>
+      </div>
+    </div>
 
-  <label for="updateOrderQty">Quantity:</label>
-  <input type="number" name="orderQty" id="updateOrderQty" />
+    <div class="form-grid">
+      <label class="form-wide">
+        <span>Order Item</span>
+        <select name="orderItemID" id="updateOrderItemID" required>
+          <option value="" disabled selected>Select an item</option>
+          {{#each orderitems}}
+          <option value="{{this.orderItemID}}"
+                  data-qty="{{this.orderQty}}"
+                  data-price="{{this.unitPrice}}">
+            #{{this.orderItemID}} - {{this.productName}} on order #{{this.orderID}}
+          </option>
+          {{/each}}
+        </select>
+      </label>
 
-  <label for="updateUnitPrice">Unit Price:</label>
-  <input type="number" step="0.01" name="unitPrice" id="updateUnitPrice" />
+      <label>
+        <span>Quantity</span>
+        <input type="number" min="1" name="orderQty" id="updateOrderQty">
+      </label>
 
-  <button type="submit">Update Item</button>
-</form>
+      <label>
+        <span>Unit Price</span>
+        <input type="number" step="0.01" min="0" name="unitPrice" id="updateUnitPrice">
+      </label>
+    </div>
+
+    <div class="form-actions">
+      <button class="button button-primary" type="submit">Update Item</button>
+    </div>
+  </form>
+</section>
 
 <script>
+document.getElementById('productID').addEventListener('change', function() {
+  const option = this.selectedOptions[0];
+  document.getElementById('unitPrice').value = option.dataset.price || "";
+});
+
 document.getElementById('updateOrderItemID').addEventListener('change', function() {
   const option = this.selectedOptions[0];
   document.getElementById('updateOrderQty').value = option.dataset.qty || "";
   document.getElementById('updateUnitPrice').value = option.dataset.price || "";
-  // If you later add product or order dropdowns, you can preselect them too:
-  // document.getElementById('updateProductID').value = option.dataset.product || "";
-  // document.getElementById('updateOrderID').value = option.dataset.order || "";
 });
 </script>

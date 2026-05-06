@@ -33,11 +33,73 @@ app.engine('.hbs', engine({
             } catch (e) {
                 return d;
             }
+        },
+        formatMoney: function (value) {
+            if (value === null || value === undefined || value === "") return "$0.00";
+            const numericValue = Number(value);
+            if (Number.isNaN(numericValue)) return value;
+            return `$${numericValue.toFixed(2)}`;
+        },
+        navActive: function (target, current) {
+            return target === current ? "is-active" : "";
         }
     }
 }));
 
 app.set('view engine', '.hbs');
+
+app.use((req, res, next) => {
+    res.locals.currentPath = req.path;
+    next();
+});
+
+const DB_UNAVAILABLE_CODES = new Set([
+    'ECONNREFUSED',
+    'ENOTFOUND',
+    'ER_ACCESS_DENIED_ERROR',
+    'ER_BAD_DB_ERROR',
+    'ETIMEDOUT',
+    'PROTOCOL_CONNECTION_LOST'
+]);
+
+function isDatabaseUnavailable(error) {
+    return error && DB_UNAVAILABLE_CODES.has(error.code);
+}
+
+function renderDatabaseFallback(res, view, fallbackData, error) {
+    console.error(`Database unavailable while rendering ${view}: ${error.code || 'UNKNOWN'} ${error.message}`);
+    return res.status(200).render(view, {
+        ...fallbackData,
+        databaseError: 'Database connection unavailable. Showing an empty workspace until MySQL is configured and reachable.'
+    });
+}
+
+function hasValue(value) {
+    return value !== undefined && value !== null && value !== '';
+}
+
+function addStringUpdate(updates, key, value) {
+    if (typeof value === 'string' && value.trim() !== '') {
+        updates[key] = value.trim();
+    }
+}
+
+function addProvidedUpdate(updates, key, value) {
+    if (hasValue(value)) {
+        updates[key] = value;
+    }
+}
+
+async function recalculateOrderTotal(orderID) {
+    await db.query(`
+        UPDATE SalesOrders
+        SET totalAmount = COALESCE(
+            (SELECT SUM(orderQty * unitPrice) FROM OrderItems WHERE orderID = ?),
+            0.00
+        )
+        WHERE orderID = ?;
+    `, [orderID, orderID]);
+}
 
 // ########################################
 // ########## ROUTE HANDLERS
@@ -54,13 +116,29 @@ app.get('/', async function (req, res) {
 
 app.get('/clients', async function (req, res) {
     try {
-        const query1 = `SELECT * FROM Clients;`;
-        const query2 = `SELECT * FROM Categories;`;
+        const query1 = `
+            SELECT
+                Clients.clientID,
+                Clients.firstName,
+                Clients.lastName,
+                Clients.email,
+                Clients.phoneNumber,
+                Clients.address,
+                Clients.categoryID,
+                Categories.categoryName
+            FROM Clients
+            LEFT JOIN Categories ON Clients.categoryID = Categories.categoryID
+            ORDER BY Clients.lastName, Clients.firstName;
+        `;
+        const query2 = `SELECT * FROM Categories ORDER BY categoryName;`;
         const [clients] = await db.query(query1);
         const [categories] = await db.query(query2);
 
         res.render('brewlogic-clients', { clients: clients, categories: categories });
     } catch (error) {
+        if (isDatabaseUnavailable(error)) {
+            return renderDatabaseFallback(res, 'brewlogic-clients', { clients: [], categories: [] }, error);
+        }
         console.error('Error fetching clients:', error);
         res.status(500).send('An error occurred while retrieving client data.');
     }
@@ -68,11 +146,14 @@ app.get('/clients', async function (req, res) {
 
 app.get('/products', async function (req, res) {
     try {
-        const query1 = `SELECT * FROM Products;`;
+        const query1 = `SELECT * FROM Products ORDER BY productName;`;
         const [products] = await db.query(query1);
 
         res.render('brewlogic-products', { products: products });
     } catch (error) {
+        if (isDatabaseUnavailable(error)) {
+            return renderDatabaseFallback(res, 'brewlogic-products', { products: [] }, error);
+        }
         console.error('Error fetching products:', error);
         res.status(500).send('An error occurred while retrieving product data.');
     }
@@ -80,11 +161,14 @@ app.get('/products', async function (req, res) {
 
 app.get('/categories', async function (req, res) {
     try {
-        const query1 = `SELECT * FROM Categories;`;
+        const query1 = `SELECT * FROM Categories ORDER BY categoryName;`;
         const [categories] = await db.query(query1);
 
         res.render('brewlogic-categories', { categories: categories });
     } catch (error) {
+        if (isDatabaseUnavailable(error)) {
+            return renderDatabaseFallback(res, 'brewlogic-categories', { categories: [] }, error);
+        }
         console.error('Error fetching categories:', error);
         res.status(500).send('An error occurred while retrieving category data.');
     }
@@ -92,13 +176,28 @@ app.get('/categories', async function (req, res) {
 
 app.get('/salesorders', async function (req, res) {
     try {
-        const query1 = `SELECT * FROM SalesOrders;`;
-        const query2 = `SELECT * FROM Clients;`;
+        const query1 = `
+            SELECT
+                SalesOrders.orderID,
+                SalesOrders.orderDate,
+                SalesOrders.clientID,
+                CONCAT_WS(' ', Clients.firstName, Clients.lastName) AS clientName,
+                Clients.email,
+                SalesOrders.totalAmount,
+                SalesOrders.orderStatus
+            FROM SalesOrders
+            INNER JOIN Clients ON SalesOrders.clientID = Clients.clientID
+            ORDER BY SalesOrders.orderDate DESC, SalesOrders.orderID DESC;
+        `;
+        const query2 = `SELECT * FROM Clients ORDER BY lastName, firstName;`;
         const [salesorders] = await db.query(query1);
         const [clients] = await db.query(query2);
 
         res.render('brewlogic-salesorders', { salesorders: salesorders, clients: clients });
     } catch (error) {
+        if (isDatabaseUnavailable(error)) {
+            return renderDatabaseFallback(res, 'brewlogic-salesorders', { salesorders: [], clients: [] }, error);
+        }
         console.error('Error fetching sales orders:', error);
         res.status(500).send('An error occurred while retrieving sales order data.');
     }
@@ -106,9 +205,31 @@ app.get('/salesorders', async function (req, res) {
 
 app.get('/orderitems', async function (req, res) {
     try {
-        const query1 = `SELECT * FROM OrderItems;`;
-        const query2 = `SELECT * FROM Products;`;
-        const query3 = `SELECT * FROM SalesOrders;`;
+        const query1 = `
+            SELECT
+                OrderItems.orderItemID,
+                OrderItems.orderID,
+                OrderItems.productID,
+                Products.productName,
+                Products.beerType,
+                OrderItems.orderQty,
+                OrderItems.unitPrice,
+                OrderItems.lineTotal
+            FROM OrderItems
+            INNER JOIN Products ON OrderItems.productID = Products.productID
+            ORDER BY OrderItems.orderID, OrderItems.orderItemID;
+        `;
+        const query2 = `SELECT * FROM Products ORDER BY productName;`;
+        const query3 = `
+            SELECT
+                SalesOrders.orderID,
+                SalesOrders.orderDate,
+                SalesOrders.totalAmount,
+                CONCAT_WS(' ', Clients.firstName, Clients.lastName) AS clientName
+            FROM SalesOrders
+            INNER JOIN Clients ON SalesOrders.clientID = Clients.clientID
+            ORDER BY SalesOrders.orderDate DESC, SalesOrders.orderID DESC;
+        `;
         const [orderitems] = await db.query(query1);
         const [products] = await db.query(query2);
         const [salesorders] = await db.query(query3);
@@ -119,13 +240,16 @@ app.get('/orderitems', async function (req, res) {
             salesorders: salesorders
         });
     } catch (error) {
+        if (isDatabaseUnavailable(error)) {
+            return renderDatabaseFallback(res, 'brewlogic-orderitems', { orderitems: [], products: [], salesorders: [] }, error);
+        }
         console.error('Error fetching order items:', error);
         res.status(500).send('An error occurred while retrieving order item data.');
     }
 });
 
 // RESET Database Route
-app.get('/reset', async function (req, res) {
+app.post('/reset', async function (req, res) {
     try {
         const query = 'CALL sp_brewlogic_reset();';
         await db.query(query);
@@ -151,23 +275,38 @@ app.post('/clients/add', async (req, res) => {
 });
 
 app.post('/products/add', async (req, res) => {
-    const { productName, beerType, beerPrice, productInStock, currentlyAvailable } = req.body;
-    await db.query('CALL sp_insert_product(?,?,?,?,?)',
-        [productName, beerType, beerPrice, productInStock, currentlyAvailable]);
-    res.redirect('/products');
+    try {
+        const { productName, beerType, beerPrice, productInStock, currentlyAvailable } = req.body;
+        await db.query('CALL sp_insert_product(?,?,?,?,?)',
+            [productName, beerType, beerPrice, productInStock, currentlyAvailable]);
+        res.redirect('/products');
+    } catch (error) {
+        console.error("Error adding product:", error);
+        res.status(500).send("Add failed.");
+    }
 });
 
 app.post('/categories/add', async (req, res) => {
-    const { categoryName } = req.body;
-    await db.query('CALL sp_insert_category(?)', [categoryName]);
-    res.redirect('/categories');
+    try {
+        const { categoryName } = req.body;
+        await db.query('CALL sp_insert_category(?)', [categoryName]);
+        res.redirect('/categories');
+    } catch (error) {
+        console.error("Error adding category:", error);
+        res.status(500).send("Add failed.");
+    }
 });
 
 app.post('/salesorders/add', async (req, res) => {
-    const { orderDate, clientID, totalAmount, orderStatus } = req.body;
-    await db.query('CALL sp_insert_salesorder(?,?,?,?)',
-        [orderDate, clientID, totalAmount, orderStatus]);
-    res.redirect('/salesorders');
+    try {
+        const { orderDate, clientID, totalAmount, orderStatus } = req.body;
+        await db.query('CALL sp_insert_salesorder(?,?,?,?)',
+            [orderDate, clientID, totalAmount, orderStatus]);
+        res.redirect('/salesorders');
+    } catch (error) {
+        console.error("Error adding sales order:", error);
+        res.status(500).send("Add failed.");
+    }
 });
 
 // CREATE Route for OrderItems
@@ -199,22 +338,27 @@ app.post('/clients/update', async (req, res) => {
     const { clientID, firstName, lastName, email, phoneNumber, address, categoryID } = req.body;
 
     const updates = {};
-    if (firstName?.trim()) updates.firstName = firstName;
-    if (lastName?.trim()) updates.lastName = lastName;
-    if (email?.trim()) updates.email = email;
-    if (phoneNumber?.trim()) updates.phoneNumber = phoneNumber;
-    if (address?.trim()) updates.address = address;
-    if (categoryID?.trim()) updates.categoryID = categoryID;
+    addStringUpdate(updates, 'firstName', firstName);
+    addStringUpdate(updates, 'lastName', lastName);
+    addStringUpdate(updates, 'email', email);
+    addStringUpdate(updates, 'phoneNumber', phoneNumber);
+    addStringUpdate(updates, 'address', address);
+    addProvidedUpdate(updates, 'categoryID', categoryID);
 
-    const sql = buildUpdate(updates);
-    if (!sql) return res.redirect('/clients');
+    try {
+        const sql = buildUpdate(updates);
+        if (!sql) return res.redirect('/clients');
 
-    await db.query(
-        `UPDATE Clients SET ${sql.setClause} WHERE clientID = ?`,
-        [...sql.values, clientID]
-    );
+        await db.query(
+            `UPDATE Clients SET ${sql.setClause} WHERE clientID = ?`,
+            [...sql.values, clientID]
+        );
 
-    res.redirect('/clients');
+        res.redirect('/clients');
+    } catch (error) {
+        console.error("Error updating client:", error);
+        res.status(500).send("Update failed.");
+    }
 });
 
 // PRODUCTS UPDATE
@@ -222,21 +366,26 @@ app.post('/products/update', async (req, res) => {
     const { productID, productName, beerType, beerPrice, productInStock, currentlyAvailable } = req.body;
 
     const updates = {};
-    if (productName?.trim()) updates.productName = productName;
-    if (beerType?.trim()) updates.beerType = beerType;
-    if (beerPrice) updates.beerPrice = beerPrice;
-    if (productInStock) updates.productInStock = productInStock;
-    if (currentlyAvailable) updates.currentlyAvailable = currentlyAvailable;
+    addStringUpdate(updates, 'productName', productName);
+    addStringUpdate(updates, 'beerType', beerType);
+    addProvidedUpdate(updates, 'beerPrice', beerPrice);
+    addProvidedUpdate(updates, 'productInStock', productInStock);
+    addProvidedUpdate(updates, 'currentlyAvailable', currentlyAvailable);
 
-    const sql = buildUpdate(updates);
-    if (!sql) return res.redirect('/products');
+    try {
+        const sql = buildUpdate(updates);
+        if (!sql) return res.redirect('/products');
 
-    await db.query(
-        `UPDATE Products SET ${sql.setClause} WHERE productID = ?`,
-        [...sql.values, productID]
-    );
+        await db.query(
+            `UPDATE Products SET ${sql.setClause} WHERE productID = ?`,
+            [...sql.values, productID]
+        );
 
-    res.redirect('/products');
+        res.redirect('/products');
+    } catch (error) {
+        console.error("Error updating product:", error);
+        res.status(500).send("Update failed.");
+    }
 });
 
 // CATEGORIES UPDATE
@@ -244,17 +393,22 @@ app.post('/categories/update', async (req, res) => {
     const { categoryID, categoryName } = req.body;
 
     const updates = {};
-    if (categoryName?.trim()) updates.categoryName = categoryName;
+    addStringUpdate(updates, 'categoryName', categoryName);
 
-    const sql = buildUpdate(updates);
-    if (!sql) return res.redirect('/categories');
+    try {
+        const sql = buildUpdate(updates);
+        if (!sql) return res.redirect('/categories');
 
-    await db.query(
-        `UPDATE Categories SET ${sql.setClause} WHERE categoryID = ?`,
-        [...sql.values, categoryID]
-    );
+        await db.query(
+            `UPDATE Categories SET ${sql.setClause} WHERE categoryID = ?`,
+            [...sql.values, categoryID]
+        );
 
-    res.redirect('/categories');
+        res.redirect('/categories');
+    } catch (error) {
+        console.error("Error updating category:", error);
+        res.status(500).send("Update failed.");
+    }
 });
 
 // SALES ORDERS UPDATE
@@ -262,20 +416,25 @@ app.post('/salesorders/update', async (req, res) => {
     const { orderID, orderDate, clientID, totalAmount, orderStatus } = req.body;
 
     const updates = {};
-    if (orderDate?.trim()) updates.orderDate = orderDate;
-    if (clientID?.trim()) updates.clientID = clientID;
-    if (totalAmount) updates.totalAmount = totalAmount;
-    if (orderStatus?.trim()) updates.orderStatus = orderStatus;
+    addStringUpdate(updates, 'orderDate', orderDate);
+    addProvidedUpdate(updates, 'clientID', clientID);
+    addProvidedUpdate(updates, 'totalAmount', totalAmount);
+    addStringUpdate(updates, 'orderStatus', orderStatus);
 
-    const sql = buildUpdate(updates);
-    if (!sql) return res.redirect('/salesorders');
+    try {
+        const sql = buildUpdate(updates);
+        if (!sql) return res.redirect('/salesorders');
 
-    await db.query(
-        `UPDATE SalesOrders SET ${sql.setClause} WHERE orderID = ?`,
-        [...sql.values, orderID]
-    );
+        await db.query(
+            `UPDATE SalesOrders SET ${sql.setClause} WHERE orderID = ?`,
+            [...sql.values, orderID]
+        );
 
-    res.redirect('/salesorders');
+        res.redirect('/salesorders');
+    } catch (error) {
+        console.error("Error updating sales order:", error);
+        res.status(500).send("Update failed.");
+    }
 });
 
 // ORDER ITEMS UPDATE
@@ -283,18 +442,31 @@ app.post('/orderitems/update', async (req, res) => {
     const { orderItemID, orderQty, unitPrice } = req.body;
 
     const updates = {};
-    if (orderQty) updates.orderQty = orderQty;
-    if (unitPrice) updates.unitPrice = unitPrice;
+    addProvidedUpdate(updates, 'orderQty', orderQty);
+    addProvidedUpdate(updates, 'unitPrice', unitPrice);
 
-    const sql = buildUpdate(updates);
-    if (!sql) return res.redirect('/orderitems');
+    try {
+        const sql = buildUpdate(updates);
+        if (!sql) return res.redirect('/orderitems');
 
-    await db.query(
-        `UPDATE OrderItems SET ${sql.setClause} WHERE orderItemID = ?`,
-        [...sql.values, orderItemID]
-    );
+        await db.query(
+            `UPDATE OrderItems SET ${sql.setClause} WHERE orderItemID = ?`,
+            [...sql.values, orderItemID]
+        );
 
-    res.redirect('/orderitems');
+        const [[orderItem]] = await db.query(
+            'SELECT orderID FROM OrderItems WHERE orderItemID = ?',
+            [orderItemID]
+        );
+        if (orderItem?.orderID) {
+            await recalculateOrderTotal(orderItem.orderID);
+        }
+
+        res.redirect('/orderitems');
+    } catch (error) {
+        console.error("Error updating order item:", error);
+        res.status(500).send("Update failed.");
+    }
 });
 
 // DELETE Routes
@@ -345,7 +517,17 @@ app.post('/salesorders/delete', async (req, res) => {
 app.post('/orderitems/delete', async (req, res) => {
     try {
         const orderItemID = req.body.delete_orderitem_id;
+
+        const [[orderItem]] = await db.query(
+            'SELECT orderID FROM OrderItems WHERE orderItemID = ?',
+            [orderItemID]
+        );
+
         await db.query('CALL sp_delete_orderitem(?);', [orderItemID]);
+
+        if (orderItem?.orderID) {
+            await recalculateOrderTotal(orderItem.orderID);
+        }
         res.redirect('/orderitems');
     } catch (error) {
         console.error("Error deleting order item:", error);

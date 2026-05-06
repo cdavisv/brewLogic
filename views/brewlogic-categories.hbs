@@ -1,58 +1,98 @@
-<h1>Categories</h1>
+<section class="page-heading">
+  <p class="eyebrow">Segments</p>
+  <h1>Categories</h1>
+  <p>Client groupings for taproom, wholesale, vendor, and partner records.</p>
+</section>
 
-{{!-- READ table --}}
-<table>
-  <thead>
-    <tr>
-      {{#each categories.[0]}}
-      <th>{{@key}}</th>
-      {{/each}}
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    {{#each categories}}
-    <tr>
-      {{#each this}}
-      <td>{{this}}</td>
-      {{/each}}
+<section class="table-panel" aria-labelledby="categoriesTableTitle">
+  <div class="section-header">
+    <div>
+      <p class="eyebrow">Client taxonomy</p>
+      <h2 id="categoriesTableTitle">Category List</h2>
+    </div>
+  </div>
 
-      {{!-- DELETE form --}}
-      <td>
-        <form method="POST" action="/categories/delete">
-          <input type="hidden" name="delete_category_id" value="{{categoryID}}" />
-          <button type="submit">Delete</button>
-        </form>
-      </td>
-    </tr>
-    {{/each}}
-  </tbody>
-</table>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">ID</th>
+          <th scope="col">Category</th>
+          <th scope="col">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#if categories.length}}
+          {{#each categories}}
+          <tr>
+            <td class="numeric">#{{categoryID}}</td>
+            <td><strong>{{categoryName}}</strong></td>
+            <td>
+              <form method="POST" action="/categories/delete" onsubmit="return confirm('Delete this category and its related clients?');">
+                <input type="hidden" name="delete_category_id" value="{{categoryID}}">
+                <button class="button button-danger button-compact" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {{/each}}
+        {{else}}
+          <tr>
+            <td colspan="3" class="empty-state">No categories have been added yet.</td>
+          </tr>
+        {{/if}}
+      </tbody>
+    </table>
+  </div>
+</section>
 
-{{!-- CREATE form --}}
-<h2>Create a Category</h2>
-<form class="cuForm" id="create_category_form" method="POST" action="/categories/add">
-  <label for="categoryName">Category Name:</label>
-  <input type="text" name="categoryName" id="categoryName" required />
+<section class="action-grid action-grid-compact" aria-label="Category actions">
+  <form class="form-panel" id="create_category_form" method="POST" action="/categories/add">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow">New segment</p>
+        <h2>Create Category</h2>
+      </div>
+    </div>
 
-  <button type="submit">Add Category</button>
-</form>
+    <div class="form-grid form-grid-single">
+      <label>
+        <span>Category Name</span>
+        <input type="text" name="categoryName" id="createCategoryName" required>
+      </label>
+    </div>
 
-{{!-- UPDATE form --}}
-<h2>Update a Category</h2>
-<form class="cuForm" id="update_category_form" method="POST" action="/categories/update">
-  <label for="categoryID">Category to Update:</label>
-  <select name="categoryID" id="categoryID" required>
-    <option value="" disabled selected>Select a Category</option>
-    {{#each categories}}
-    <option value="{{this.categoryID}}">
-      {{this.categoryID}} - {{this.categoryName}}
-    </option>
-    {{/each}}
-  </select>
+    <div class="form-actions">
+      <button class="button button-primary" type="submit">Add Category</button>
+    </div>
+  </form>
 
-  <label for="categoryName">New Category Name:</label>
-  <input type="text" name="categoryName" id="categoryName" required />
+  <form class="form-panel" id="update_category_form" method="POST" action="/categories/update">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow">Existing segment</p>
+        <h2>Update Category</h2>
+      </div>
+    </div>
 
-  <button type="submit">Update Category</button>
-</form>
+    <div class="form-grid form-grid-single">
+      <label>
+        <span>Category</span>
+        <select name="categoryID" id="categoryID" required>
+          <option value="" disabled selected>Select a category</option>
+          {{#each categories}}
+          <option value="{{this.categoryID}}">{{this.categoryID}} - {{this.categoryName}}</option>
+          {{/each}}
+        </select>
+      </label>
+
+      <label>
+        <span>New Category Name</span>
+        <input type="text" name="categoryName" id="updateCategoryName" required>
+      </label>
+    </div>
+
+    <div class="form-actions">
+      <button class="button button-primary" type="submit">Update Category</button>
+    </div>
+  </form>
+</section>

@@ -1,107 +1,179 @@
-<h1>Clients</h1>
+<section class="page-heading">
+  <p class="eyebrow">Accounts</p>
+  <h1>Clients</h1>
+  <p>Customer and vendor records tied to BrewLogic categories.</p>
+</section>
 
-{{!-- READ table --}}
-<table>
-  <thead>
-    <tr>
-      {{#each clients.[0]}}
-      <th>{{@key}}</th>
-      {{/each}}
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    {{#each clients}}
-    <tr>
-      {{#each this}}
-      <td>{{this}}</td>
-      {{/each}}
+<section class="table-panel" aria-labelledby="clientsTableTitle">
+  <div class="section-header">
+    <div>
+      <p class="eyebrow">Directory</p>
+      <h2 id="clientsTableTitle">Client List</h2>
+    </div>
+  </div>
 
-      {{!-- DELETE form --}}
-      <td>
-        <form method="POST" action="/clients/delete">
-          <input type="hidden" name="delete_client_id" value="{{clientID}}" />
-          <button type="submit">Delete</button>
-        </form>
-      </td>
-    </tr>
-    {{/each}}
-  </tbody>
-</table>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">ID</th>
+          <th scope="col">Name</th>
+          <th scope="col">Category</th>
+          <th scope="col">Email</th>
+          <th scope="col">Phone</th>
+          <th scope="col">Address</th>
+          <th scope="col">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#if clients.length}}
+          {{#each clients}}
+          <tr>
+            <td class="numeric">#{{clientID}}</td>
+            <td>
+              <strong>{{firstName}} {{lastName}}</strong>
+            </td>
+            <td><span class="badge">{{categoryName}}</span></td>
+            <td><a class="table-link" href="mailto:{{email}}">{{email}}</a></td>
+            <td>{{phoneNumber}}</td>
+            <td>{{address}}</td>
+            <td>
+              <form method="POST" action="/clients/delete" onsubmit="return confirm('Delete this client and related sales orders?');">
+                <input type="hidden" name="delete_client_id" value="{{clientID}}">
+                <button class="button button-danger button-compact" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {{/each}}
+        {{else}}
+          <tr>
+            <td colspan="7" class="empty-state">No clients have been added yet.</td>
+          </tr>
+        {{/if}}
+      </tbody>
+    </table>
+  </div>
+</section>
 
-{{!-- CREATE form --}}
-<h2>Create a Client</h2>
-<form class="cuForm" id="create_client_form" method="POST" action="/clients/add">
-  <label for="firstName">First Name:</label>
-  <input type="text" name="firstName" id="firstName" required />
+<section class="action-grid" aria-label="Client actions">
+  <form class="form-panel" id="create_client_form" method="POST" action="/clients/add">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow">New account</p>
+        <h2>Create Client</h2>
+      </div>
+    </div>
 
-  <label for="lastName">Last Name:</label>
-  <input type="text" name="lastName" id="lastName" />
+    <div class="form-grid">
+      <label>
+        <span>First Name</span>
+        <input type="text" name="firstName" id="firstName" autocomplete="given-name" required>
+      </label>
 
-  <label for="email">Email:</label>
-  <input type="email" name="email" id="email" required />
+      <label>
+        <span>Last Name</span>
+        <input type="text" name="lastName" id="lastName" autocomplete="family-name">
+      </label>
 
-  <label for="phoneNumber">Phone Number:</label>
-  <input type="text" name="phoneNumber" id="phoneNumber" />
+      <label>
+        <span>Email</span>
+        <input type="email" name="email" id="email" autocomplete="email" required>
+      </label>
 
-  <label for="address">Address:</label>
-  <input type="text" name="address" id="address" />
+      <label>
+        <span>Phone Number</span>
+        <input type="text" name="phoneNumber" id="phoneNumber" autocomplete="tel">
+      </label>
 
-  <label for="categoryID">Category:</label>
-  <select name="categoryID" id="categoryID" required>
-    <option value="" disabled selected>Select Category</option>
-    {{#each categories}}
-    <option value="{{this.categoryID}}">{{this.categoryName}}</option>
-    {{/each}}
-  </select>
+      <label class="form-wide">
+        <span>Address</span>
+        <input type="text" name="address" id="address" autocomplete="street-address">
+      </label>
 
-  <button type="submit">Add Client</button>
-</form>
+      <label>
+        <span>Category</span>
+        <select name="categoryID" id="createCategoryID" required>
+          <option value="" disabled selected>Select category</option>
+          {{#each categories}}
+          <option value="{{this.categoryID}}">{{this.categoryName}}</option>
+          {{/each}}
+        </select>
+      </label>
+    </div>
 
-{{!-- UPDATE form --}}
-<h2>Update a Client</h2>
-<form class="cuForm" id="update_client_form" method="POST" action="/clients/update">
-  <label for="clientID">Client to Update:</label>
-  <select name="clientID" id="clientID" required>
-    <option value="" disabled selected>Select a Client</option>
-    {{#each clients}}
-    <option value="{{this.clientID}}"
-            data-first="{{this.firstName}}"
-            data-last="{{this.lastName}}"
-            data-email="{{this.email}}"
-            data-phone="{{this.phoneNumber}}"
-            data-address="{{this.address}}"
-            data-category="{{this.categoryID}}">
-      {{this.clientID}} - {{this.firstName}} {{this.lastName}}
-    </option>
-    {{/each}}
-  </select>
+    <div class="form-actions">
+      <button class="button button-primary" type="submit">Add Client</button>
+    </div>
+  </form>
 
-  <label for="updateFirstName">First Name:</label>
-  <input type="text" name="firstName" id="updateFirstName" />
+  <form class="form-panel" id="update_client_form" method="POST" action="/clients/update">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow">Existing account</p>
+        <h2>Update Client</h2>
+      </div>
+    </div>
 
-  <label for="updateLastName">Last Name:</label>
-  <input type="text" name="lastName" id="updateLastName" />
+    <div class="form-grid">
+      <label class="form-wide">
+        <span>Client</span>
+        <select name="clientID" id="clientID" required>
+          <option value="" disabled selected>Select a client</option>
+          {{#each clients}}
+          <option value="{{this.clientID}}"
+                  data-first="{{this.firstName}}"
+                  data-last="{{this.lastName}}"
+                  data-email="{{this.email}}"
+                  data-phone="{{this.phoneNumber}}"
+                  data-address="{{this.address}}"
+                  data-category="{{this.categoryID}}">
+            #{{this.clientID}} - {{this.firstName}} {{this.lastName}}
+          </option>
+          {{/each}}
+        </select>
+      </label>
 
-  <label for="updateEmail">Email:</label>
-  <input type="email" name="email" id="updateEmail" />
+      <label>
+        <span>First Name</span>
+        <input type="text" name="firstName" id="updateFirstName">
+      </label>
 
-  <label for="updatePhoneNumber">Phone Number:</label>
-  <input type="text" name="phoneNumber" id="updatePhoneNumber" />
+      <label>
+        <span>Last Name</span>
+        <input type="text" name="lastName" id="updateLastName">
+      </label>
 
-  <label for="updateAddress">Address:</label>
-  <input type="text" name="address" id="updateAddress" />
+      <label>
+        <span>Email</span>
+        <input type="email" name="email" id="updateEmail">
+      </label>
 
-  <label for="updateCategoryID">Category:</label>
-  <select name="categoryID" id="updateCategoryID">
-    <option value="" disabled selected>Select Category</option>
-    {{#each categories}}
-    <option value="{{this.categoryID}}">{{this.categoryName}}</option>
-    {{/each}}
-  </select>
+      <label>
+        <span>Phone Number</span>
+        <input type="text" name="phoneNumber" id="updatePhoneNumber">
+      </label>
 
-  <button type="submit">Update Client</button>
-</form>
+      <label class="form-wide">
+        <span>Address</span>
+        <input type="text" name="address" id="updateAddress">
+      </label>
+
+      <label>
+        <span>Category</span>
+        <select name="categoryID" id="updateCategoryID">
+          <option value="" disabled selected>Select category</option>
+          {{#each categories}}
+          <option value="{{this.categoryID}}">{{this.categoryName}}</option>
+          {{/each}}
+        </select>
+      </label>
+    </div>
+
+    <div class="form-actions">
+      <button class="button button-primary" type="submit">Update Client</button>
+    </div>
+  </form>
+</section>
 
 <script>
 document.getElementById('clientID').addEventListener('change', function() {

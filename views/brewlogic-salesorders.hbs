@@ -1,107 +1,174 @@
-<h1>Sales Orders</h1>
+<section class="page-heading">
+  <p class="eyebrow">Register</p>
+  <h1>Sales Orders</h1>
+  <p>Open tabs, completed purchases, wholesale shipments, and order totals.</p>
+</section>
 
-{{!-- READ table --}}
-<table>
-  <thead>
-    <tr>
-      {{#each salesorders.[0]}}
-      <th>{{@key}}</th>
-      {{/each}}
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    {{#each salesorders}}
-    <tr>
-      <td>{{orderID}}</td>
-      <td>{{formatDate orderDate}}</td>
-      <td>{{clientID}}</td>
-      <td>{{totalAmount}}</td>
-      <td>{{orderStatus}}</td>
+<section class="table-panel" aria-labelledby="ordersTableTitle">
+  <div class="section-header">
+    <div>
+      <p class="eyebrow">Transactions</p>
+      <h2 id="ordersTableTitle">Order List</h2>
+    </div>
+  </div>
 
-      <td>
-        {{!-- DELETE form --}}
-        <form method="POST" action="/salesorders/delete">
-          <input type="hidden" name="delete_salesorder_id" value="{{orderID}}" />
-          <button type="submit">Delete</button>
-        </form>
-      </td>
-    </tr>
-    {{/each}}
-  </tbody>
-</table>
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">Order</th>
+          <th scope="col">Date</th>
+          <th scope="col">Client</th>
+          <th scope="col">Email</th>
+          <th scope="col">Total</th>
+          <th scope="col">Status</th>
+          <th scope="col">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#if salesorders.length}}
+          {{#each salesorders}}
+          <tr>
+            <td class="numeric">#{{orderID}}</td>
+            <td>{{formatDate orderDate}}</td>
+            <td><strong>{{clientName}}</strong></td>
+            <td><a class="table-link" href="mailto:{{email}}">{{email}}</a></td>
+            <td class="numeric">{{formatMoney totalAmount}}</td>
+            <td><span class="badge badge-info">{{orderStatus}}</span></td>
+            <td>
+              <form method="POST" action="/salesorders/delete" onsubmit="return confirm('Delete this order and related line items?');">
+                <input type="hidden" name="delete_salesorder_id" value="{{orderID}}">
+                <button class="button button-danger button-compact" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {{/each}}
+        {{else}}
+          <tr>
+            <td colspan="7" class="empty-state">No sales orders have been added yet.</td>
+          </tr>
+        {{/if}}
+      </tbody>
+    </table>
+  </div>
+</section>
 
-{{!-- CREATE form --}}
-<h2>Create a Sales Order</h2>
-<form class="cuForm" id="create_salesorder_form" method="POST" action="/salesorders/add">
-  <label for="orderDate">Order Date:</label>
-  <input type="date" name="orderDate" id="orderDate" required />
+<section class="action-grid" aria-label="Sales order actions">
+  <form class="form-panel" id="create_salesorder_form" method="POST" action="/salesorders/add">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow">New ticket</p>
+        <h2>Create Sales Order</h2>
+      </div>
+    </div>
 
-  <label for="clientID">Client:</label>
-  <select name="clientID" id="clientID" required>
-    <option value="" disabled selected>Select Client</option>
-    {{#each clients}}
-    <option value="{{this.clientID}}">
-      {{this.clientID}} - {{this.firstName}} {{this.lastName}}
-    </option>
-    {{/each}}
-  </select>
+    <div class="form-grid">
+      <label>
+        <span>Order Date</span>
+        <input type="date" name="orderDate" id="orderDate" required>
+      </label>
 
-  <label for="totalAmount">Total Amount:</label>
-  <input type="number" step="0.01" name="totalAmount" id="totalAmount" required />
+      <label>
+        <span>Client</span>
+        <select name="clientID" id="clientID" required>
+          <option value="" disabled selected>Select client</option>
+          {{#each clients}}
+          <option value="{{this.clientID}}">#{{this.clientID}} - {{this.firstName}} {{this.lastName}}</option>
+          {{/each}}
+        </select>
+      </label>
 
-  <label for="orderStatus">Order Status:</label>
-  <input type="text" name="orderStatus" id="orderStatus" required />
+      <label>
+        <span>Total Amount</span>
+        <input type="number" step="0.01" min="0" name="totalAmount" id="totalAmount" required>
+      </label>
 
-  <button type="submit">Add Order</button>
-</form>
+      <label>
+        <span>Order Status</span>
+        <select name="orderStatus" id="orderStatus" required>
+          <option value="" disabled selected>Select status</option>
+          <option value="Pending">Pending</option>
+          <option value="Completed">Completed</option>
+          <option value="Shipped">Shipped</option>
+          <option value="Cancelled">Cancelled</option>
+        </select>
+      </label>
+    </div>
 
-{{!-- UPDATE form --}}
-<h2>Update a Sales Order</h2>
-<form class="cuForm" id="update_salesorder_form" method="POST" action="/salesorders/update">
-  <label for="updateOrderID">Order to Update:</label>
-  <select name="orderID" id="updateOrderID" required>
-    <option value="" disabled selected>Select an Order</option>
-    {{#each salesorders}}
-    <option value="{{this.orderID}}"
-            data-date="{{formatDate this.orderDate}}"
-            data-client="{{this.clientID}}"
-            data-amount="{{this.totalAmount}}"
-            data-status="{{this.orderStatus}}">
-      {{this.orderID}}
-    </option>
-    {{/each}}
-  </select>
+    <div class="form-actions">
+      <button class="button button-primary" type="submit">Add Order</button>
+    </div>
+  </form>
 
-  <label for="updateOrderDate">Order Date:</label>
-  <input type="date" name="orderDate" id="updateOrderDate" />
+  <form class="form-panel" id="update_salesorder_form" method="POST" action="/salesorders/update">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow">Existing ticket</p>
+        <h2>Update Sales Order</h2>
+      </div>
+    </div>
 
-  <label for="updateClientID">Client:</label>
-  <select name="clientID" id="updateClientID">
-    <option value="" disabled selected>Select Client</option>
-    {{#each clients}}
-    <option value="{{this.clientID}}">
-      {{this.clientID}} - {{this.firstName}} {{this.lastName}}
-    </option>
-    {{/each}}
-  </select>
+    <div class="form-grid">
+      <label class="form-wide">
+        <span>Order</span>
+        <select name="orderID" id="updateOrderID" required>
+          <option value="" disabled selected>Select an order</option>
+          {{#each salesorders}}
+          <option value="{{this.orderID}}"
+                  data-date="{{formatDate this.orderDate}}"
+                  data-client="{{this.clientID}}"
+                  data-amount="{{this.totalAmount}}"
+                  data-status="{{this.orderStatus}}">
+            #{{this.orderID}} - {{formatDate this.orderDate}} - {{this.clientName}}
+          </option>
+          {{/each}}
+        </select>
+      </label>
 
-  <label for="updateTotalAmount">Total Amount:</label>
-  <input type="number" step="0.01" name="totalAmount" id="updateTotalAmount" />
+      <label>
+        <span>Order Date</span>
+        <input type="date" name="orderDate" id="updateOrderDate">
+      </label>
 
-  <label for="updateOrderStatus">Order Status:</label>
-  <input type="text" name="orderStatus" id="updateOrderStatus" />
+      <label>
+        <span>Client</span>
+        <select name="clientID" id="updateClientID">
+          <option value="" disabled selected>Select client</option>
+          {{#each clients}}
+          <option value="{{this.clientID}}">#{{this.clientID}} - {{this.firstName}} {{this.lastName}}</option>
+          {{/each}}
+        </select>
+      </label>
 
-  <button type="submit">Update Order</button>
-</form>
+      <label>
+        <span>Total Amount</span>
+        <input type="number" step="0.01" min="0" name="totalAmount" id="updateTotalAmount">
+      </label>
+
+      <label>
+        <span>Order Status</span>
+        <select name="orderStatus" id="updateOrderStatus">
+          <option value="" disabled>Select status</option>
+          <option value="Pending">Pending</option>
+          <option value="Completed">Completed</option>
+          <option value="Shipped">Shipped</option>
+          <option value="Cancelled">Cancelled</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="form-actions">
+      <button class="button button-primary" type="submit">Update Order</button>
+    </div>
+  </form>
+</section>
 
 <script>
 document.getElementById('updateOrderID').addEventListener('change', function() {
   const option = this.selectedOptions[0];
   document.getElementById('updateOrderDate').value = option.dataset.date || "";
+  document.getElementById('updateClientID').value = option.dataset.client || "";
   document.getElementById('updateTotalAmount').value = option.dataset.amount || "";
   document.getElementById('updateOrderStatus').value = option.dataset.status || "";
-  // Preselect the client dropdown
-  document.getElementById('updateClientID').value = option.dataset.client || "";
 });
 </script>

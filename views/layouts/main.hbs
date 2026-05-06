@@ -2,24 +2,39 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>CS340 - BrewLogic</title>
-    <link rel="stylesheet" href="style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>BrewLogic POS</title>
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
-    <nav>
-        Navigation: 
-        <a href="/">Home</a>
-        <a href="/clients">Clients</a>
-        <a href="/products">Products</a>    
-        <a href="/categories">Categories</a>
-        <a href="/salesorders">Sales Orders</a>
-        <a href="/orderitems">Order Items</a>
-        <a href="/reset" style="background-color:red; color:white; 
-            padding:8px 12px; border-radius:4px; font-weight:bold;">
-            RESET
+    <header class="app-header">
+        <a class="brand" href="/" aria-label="BrewLogic home">
+            <span class="brand-mark">BL</span>
+            <span>
+                <span class="brand-name">BrewLogic</span>
+                <span class="brand-subtitle">Brewery POS</span>
+            </span>
         </a>
-    </nav>
 
-    {{{body}}}
+        <nav class="primary-nav" aria-label="Primary navigation">
+            <a class="{{navActive "/" currentPath}}" href="/">Dashboard</a>
+            <a class="{{navActive "/clients" currentPath}}" href="/clients">Clients</a>
+            <a class="{{navActive "/products" currentPath}}" href="/products">Products</a>
+            <a class="{{navActive "/categories" currentPath}}" href="/categories">Categories</a>
+            <a class="{{navActive "/salesorders" currentPath}}" href="/salesorders">Orders</a>
+            <a class="{{navActive "/orderitems" currentPath}}" href="/orderitems">Line Items</a>
+        </nav>
+
+        <form class="reset-form" method="POST" action="/reset" onsubmit="return confirm('Reset demo data? This will replace the current database contents.');">
+            <button class="reset-link" type="submit">Reset demo data</button>
+        </form>
+    </header>
+
+    <main class="app-main">
+        {{#if databaseError}}
+        <div class="status-banner" role="status">{{databaseError}}</div>
+        {{/if}}
+        {{{body}}}
+    </main>
 </body>
 </html>

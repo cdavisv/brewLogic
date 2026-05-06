@@ -122,6 +122,7 @@ CREATE DATABASE brewlogic;
 Create a .env file or update your database config with:
 ```env
 DB_HOST=localhost
+DB_PORT=3306
 DB_USER=your_mysql_user
 DB_PASSWORD=your_mysql_password
 DB_NAME=brewlogic
@@ -134,7 +135,7 @@ npm start
 
 The application will start on:
 ```
-http://localhost:3000
+http://localhost:8696
 ```
 
 ### Application Pages

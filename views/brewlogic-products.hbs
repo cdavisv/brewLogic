@@ -1,107 +1,170 @@
-<h1>Products</h1>
+<section class="page-heading">
+  <p class="eyebrow">Cellar</p>
+  <h1>Products</h1>
+  <p>Beer catalog, pour pricing, stock counts, and taproom availability.</p>
+</section>
 
-{{!-- READ table --}}
-<table>
-  <thead>
-    <tr>
-      {{#each products.[0]}}
-      <th>{{@key}}</th>
-      {{/each}}
-      <th></th>
-    </tr>
-  </thead>
-  <tbody>
-    {{#each products}}
-    <tr>
-      <td>{{productID}}</td>
-      <td>{{productName}}</td>
-      <td>{{beerType}}</td>
-      <td>{{beerPrice}}</td>
-      <td>{{productInStock}}</td>
-      <td>
-        {{#if currentlyAvailable}}
-          Yes
+<section class="table-panel" aria-labelledby="productsTableTitle">
+  <div class="section-header">
+    <div>
+      <p class="eyebrow">Inventory</p>
+      <h2 id="productsTableTitle">Product List</h2>
+    </div>
+  </div>
+
+  <div class="table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th scope="col">ID</th>
+          <th scope="col">Beer</th>
+          <th scope="col">Style</th>
+          <th scope="col">Price</th>
+          <th scope="col">Stock</th>
+          <th scope="col">Availability</th>
+          <th scope="col">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#if products.length}}
+          {{#each products}}
+          <tr>
+            <td class="numeric">#{{productID}}</td>
+            <td><strong>{{productName}}</strong></td>
+            <td>{{beerType}}</td>
+            <td class="numeric">{{formatMoney beerPrice}}</td>
+            <td class="numeric">{{productInStock}}</td>
+            <td>
+              {{#if currentlyAvailable}}
+                <span class="badge badge-success">Available</span>
+              {{else}}
+                <span class="badge badge-muted">Unavailable</span>
+              {{/if}}
+            </td>
+            <td>
+              <form method="POST" action="/products/delete" onsubmit="return confirm('Delete this product and related order items?');">
+                <input type="hidden" name="delete_product_id" value="{{productID}}">
+                <button class="button button-danger button-compact" type="submit">Delete</button>
+              </form>
+            </td>
+          </tr>
+          {{/each}}
         {{else}}
-          No
+          <tr>
+            <td colspan="7" class="empty-state">No products have been added yet.</td>
+          </tr>
         {{/if}}
-      </td>
+      </tbody>
+    </table>
+  </div>
+</section>
 
-      {{!-- DELETE form --}}
-      <td>
-        <form method="POST" action="/products/delete">
-          <input type="hidden" name="delete_product_id" value="{{productID}}" />
-          <button type="submit">Delete</button>
-        </form>
-      </td>
-    </tr>
-    {{/each}}
-  </tbody>
-</table>
+<section class="action-grid" aria-label="Product actions">
+  <form class="form-panel" id="create_product_form" method="POST" action="/products/add">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow">New beer</p>
+        <h2>Create Product</h2>
+      </div>
+    </div>
 
-{{!-- CREATE form --}}
-<h2>Create a Product</h2>
-<form class="cuForm" id="create_product_form" method="POST" action="/products/add">
-  <label for="productName">Name:</label>
-  <input type="text" name="productName" id="productName" required />
+    <div class="form-grid">
+      <label>
+        <span>Name</span>
+        <input type="text" name="productName" id="productName" required>
+      </label>
 
-  <label for="beerType">Beer Type:</label>
-  <input type="text" name="beerType" id="beerType" required />
+      <label>
+        <span>Beer Type</span>
+        <input type="text" name="beerType" id="beerType" required>
+      </label>
 
-  <label for="beerPrice">Price:</label>
-  <input type="number" step="0.01" name="beerPrice" id="beerPrice" required />
+      <label>
+        <span>Price</span>
+        <input type="number" step="0.01" min="0" name="beerPrice" id="beerPrice" required>
+      </label>
 
-  <label for="productInStock">Stock Quantity:</label>
-  <input type="number" name="productInStock" id="productInStock" required />
+      <label>
+        <span>Stock Quantity</span>
+        <input type="number" min="0" name="productInStock" id="productInStock" required>
+      </label>
 
-  <label for="currentlyAvailable">Available:</label>
-  <select name="currentlyAvailable" id="currentlyAvailable" required>
-    <option value="" disabled selected>Select Availability</option>
-    <option value="1">Yes</option>
-    <option value="0">No</option>
-  </select>
+      <label>
+        <span>Available</span>
+        <select name="currentlyAvailable" id="createCurrentlyAvailable" required>
+          <option value="" disabled selected>Select availability</option>
+          <option value="1">Yes</option>
+          <option value="0">No</option>
+        </select>
+      </label>
+    </div>
 
-  <button type="submit">Add Product</button>
-</form>
+    <div class="form-actions">
+      <button class="button button-primary" type="submit">Add Product</button>
+    </div>
+  </form>
 
-{{!-- UPDATE form --}}
-<h2>Update a Product</h2>
-<form class="cuForm" id="update_product_form" method="POST" action="/products/update">
-  <label for="updateProductID">Product to Update:</label>
-  <select name="productID" id="updateProductID" required>
-    <option value="" disabled selected>Select a Product</option>
-    {{#each products}}
-    <option value="{{this.productID}}"
-            data-name="{{this.productName}}"
-            data-type="{{this.beerType}}"
-            data-price="{{this.beerPrice}}"
-            data-stock="{{this.productInStock}}"
-            data-available="{{this.currentlyAvailable}}">
-      {{this.productID}} - {{this.productName}}
-    </option>
-    {{/each}}
-  </select>
+  <form class="form-panel" id="update_product_form" method="POST" action="/products/update">
+    <div class="section-header">
+      <div>
+        <p class="eyebrow">Existing beer</p>
+        <h2>Update Product</h2>
+      </div>
+    </div>
 
-  <label for="updateProductName">Name:</label>
-  <input type="text" name="productName" id="updateProductName" />
+    <div class="form-grid">
+      <label class="form-wide">
+        <span>Product</span>
+        <select name="productID" id="updateProductID" required>
+          <option value="" disabled selected>Select a product</option>
+          {{#each products}}
+          <option value="{{this.productID}}"
+                  data-name="{{this.productName}}"
+                  data-type="{{this.beerType}}"
+                  data-price="{{this.beerPrice}}"
+                  data-stock="{{this.productInStock}}"
+                  data-available="{{this.currentlyAvailable}}">
+            #{{this.productID}} - {{this.productName}}
+          </option>
+          {{/each}}
+        </select>
+      </label>
 
-  <label for="updateBeerType">Beer Type:</label>
-  <input type="text" name="beerType" id="updateBeerType" />
+      <label>
+        <span>Name</span>
+        <input type="text" name="productName" id="updateProductName">
+      </label>
 
-  <label for="updateBeerPrice">Price:</label>
-  <input type="number" step="0.01" name="beerPrice" id="updateBeerPrice" />
+      <label>
+        <span>Beer Type</span>
+        <input type="text" name="beerType" id="updateBeerType">
+      </label>
 
-  <label for="updateProductInStock">Stock Quantity:</label>
-  <input type="number" name="productInStock" id="updateProductInStock" />
+      <label>
+        <span>Price</span>
+        <input type="number" step="0.01" min="0" name="beerPrice" id="updateBeerPrice">
+      </label>
 
-  <label for="updateCurrentlyAvailable">Available:</label>
-  <select name="currentlyAvailable" id="updateCurrentlyAvailable">
-    <option value="" disabled>Select Availability</option>
-    <option value="1">Yes</option>
-    <option value="0">No</option>
-  </select>
+      <label>
+        <span>Stock Quantity</span>
+        <input type="number" min="0" name="productInStock" id="updateProductInStock">
+      </label>
 
-  <button type="submit">Update Product</button>
-</form>
+      <label>
+        <span>Available</span>
+        <select name="currentlyAvailable" id="updateCurrentlyAvailable">
+          <option value="" disabled>Select availability</option>
+          <option value="1">Yes</option>
+          <option value="0">No</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="form-actions">
+      <button class="button button-primary" type="submit">Update Product</button>
+    </div>
+  </form>
+</section>
 
 <script>
 document.getElementById('updateProductID').addEventListener('change', function() {
